@@ -4,10 +4,12 @@ import com.fasterxml.uuid.{ EthernetAddress, Generators }
 import mesosphere.marathon.Protos.MarathonTask
 import mesosphere.marathon.core.task.Task.Launched
 import mesosphere.marathon.core.task.tracker.impl.TaskSerializer
-import mesosphere.marathon.state.{ AppDefinition, PathId, Timestamp }
+import mesosphere.marathon.state.{ PersistentVolume, AppDefinition, PathId, Timestamp }
 import org.apache.mesos.Protos.TaskState
 import org.apache.mesos.Protos.TaskState._
 import org.apache.mesos.{ Protos => MesosProtos }
+
+import scala.util.matching.Regex
 
 /**
   * The state for launching a task. This might be a launched task or a reservation for launching a task or both.
@@ -99,20 +101,33 @@ object Task {
     */
   case class ReservationWithVolumes(volumeIds: Iterable[LocalVolumeId])
 
-  case class LocalVolumeId(idString: String) {
+  case class LocalVolume(id: LocalVolumeId, persistentVolume: PersistentVolume)
+
+  case class LocalVolumeId(appId: PathId, containerPath: String, uuid: String) {
+    import LocalVolumeId._
+    lazy val idString = appId.safePath + appDelimiter + containerPath + volumeDelimiter + uuid
+
     override def toString: String = s"LocalVolume [$idString]"
   }
 
   object LocalVolumeId {
-    def apply(appId: PathId, path: String): LocalVolumeId = {
-      //FIXME: mock implementation from ME
-      LocalVolumeId(s"${appId.safePath}.$path.random")
-    }
-
+    private val uuidGenerator = Generators.timeBasedGenerator(EthernetAddress.fromInterface())
+    private val appDelimiter = "."
+    private val volumeDelimiter = "."
     private val LocalVolumeEncoderRE = "^([^.]+).([^.]+).([^.]+)$".r
-    def unapply(id: String): Option[(PathId, String)] = id match {
-      case LocalVolumeEncoderRE(app, path, _) => Some(PathId.fromSafePath(app) -> path)
-      case _                                  => None
+
+    def apply(appId: PathId, volume: PersistentVolume): LocalVolumeId =
+      LocalVolumeId(appId, volume.containerPath, uuidGenerator.generate().toString)
+
+    def apply(idString: String): LocalVolumeId =
+      LocalVolumeId.unapply(idString) match {
+        case Some((appId, path, uuid)) => LocalVolumeId(appId, path, uuid)
+        case _                         => throw new MatchError(s"localVolumeId $idString is no valid identifier")
+      }
+
+    def unapply(id: String): Option[(PathId, String, String)] = id match {
+      case LocalVolumeEncoderRE(app, path, uuid) => Some((PathId.fromSafePath(app), path, uuid))
+      case _                                     => None
     }
   }
 
