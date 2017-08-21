@@ -27,7 +27,7 @@ def compileAndTest(): Unit = utils.stage("Compile and Test") {
 
   def run(cmd: String *) = utils.runWithTimeout(1.hour)(cmd)
 
-  run("sbt", "clean", "test", "integration:test", "scapegoat")
+  run("sbt", "integration:test", "scapegoat")
 
   // Compile other projects.
   run("sbt", "benchmark/compile")
