@@ -13,4 +13,4 @@ echo "deb http://repos.mesosphere.com/${DISTRO} ${CODENAME} main" |
   sudo apt-get -y update
 
 sudo apt-get install -y --force-yes --no-install-recommends mesos=1.2.0-2.0.6
-sudo systemctl stop mesos-master.service mesos-slave.service mesos_executor.slice
+# sudo systemctl stop mesos-master.service mesos-slave.service mesos_executor.slice
