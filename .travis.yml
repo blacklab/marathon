@@ -6,4 +6,4 @@ jdk:
 scala:
   - 2.11.8
 script:
-  - sbt "set parallelExecution in Test := false" test
+  - travis_wait 30 sbt "set parallelExecution in Test := false" test
