@@ -6,4 +6,4 @@ jdk:
 scala:
   - 2.11.8
 script:
-  - travis_wait 30 ./ci/travis.sh
+  - travis_wait 60 ./ci/travis.sh
